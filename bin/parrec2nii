@@ -51,6 +51,12 @@ def get_opt_parser():
                    """Output bvals/bvecs files in addition to NIFTI
                    image.""")))
     p.add_option(
+        Option("--norm-bvs", action="store_true", dest="norm_bvs",
+               default=False,
+               help=one_line(
+                   """Normalize bvectors to 1.0, rescaling b-values
+                   appropriately.""")))
+    p.add_option(
         Option("-d", "--dwell-time", action="store_true", default=False,
                dest="dwell_time",
                help=one_line(
@@ -183,7 +189,7 @@ def proc_file(infile, opts):
         affine = np.dot(affine, t_aff)
         in_data = apply_orientation(in_data, ornt)
 
-    bvals, bvecs = pr_hdr.get_bvals_bvecs()
+    bvals, bvecs = pr_hdr.get_bvals_bvecs(normalize_bvecs=opts.norm_bvs)
     if not opts.keep_trace:  # discard Philips DTI trace if present
         if bvals is not None:
             bad_mask = np.logical_and(bvals != 0, (bvecs == 0).all(axis=1))
