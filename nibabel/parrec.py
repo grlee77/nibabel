@@ -445,7 +445,7 @@ def parse_PAR_header(fobj):
     -------
     general_info : dict
         Contains all "General Information" from the header file
-    image_info : ndarray
+    image_defs : ndarray
         Structured array with fields giving all "Image information" in the
         header
     """
@@ -555,7 +555,7 @@ class PARRECArrayProxy(object):
             True gives the same behavior as ``mmap='c'``.  If `file_like`
             cannot be memory-mapped, ignore `mmap` value and read array from
             file.
-        scaling : {'fp', 'dv'}, optional, keyword only
+        scaling : {'fp', 'dv', None}, optional, keyword only
             Type of scaling to use - see header ``get_data_scaling`` method.
         """
         if mmap not in (True, False, 'c', 'r'):
@@ -601,12 +601,15 @@ class PARRECArrayProxy(object):
         indices = self._slice_indices
         if indices[0] != 0 or np.any(np.diff(indices) != 1):
             # We can't load direct from REC file, use inefficient slicing
-            return np.asanyarray(self)[slicer]
-        # Slices all sequential from zero, can use fileslice
-        # This gives more efficient volume by volume loading, for example
-        with ImageOpener(self.file_like) as fileobj:
-            raw_data = fileslice(fileobj, slicer, self._shape, self._dtype, 0,
-                                 'F')
+            raw_data = np.asanyarray(self)[slicer]
+        else:
+            # Slices all sequential from zero, can use fileslice
+            # This gives more efficient volume by volume loading, for example
+            with ImageOpener(self.file_like) as fileobj:
+                raw_data = fileslice(fileobj, slicer, self._shape, self._dtype,
+                                     0, 'F')
+        if self._slice_scaling is None:
+            return raw_data
         # Broadcast scaling to shape of original data
         slopes, inters = self._slice_scaling
         fake_data = strided_scalar(self._shape)
@@ -957,6 +960,8 @@ class PARRECHeader(SpatialHeader):
         RI: rescale intercept
         SS: scale slope
         """
+        if method is None:
+            return None
         # These will be 3D or 4D
         scale_slope = self.image_defs['scale slope']
         rescale_slope = self.image_defs['rescale slope']
@@ -1049,7 +1054,7 @@ class PARRECImage(SpatialImage):
         permit_truncated : {False, True}, optional, keyword-only
             If False, raise an error for an image where the header shows signs
             that fewer slices / volumes were recorded than were expected.
-        scaling : {'dv', 'fp'}, optional, keyword-only
+        scaling : {'dv', 'fp', None}, optional, keyword-only
             Scaling method to apply to data (see
             :meth:`PARRECHeader.get_data_scaling`).
         """
@@ -1083,7 +1088,7 @@ class PARRECImage(SpatialImage):
         permit_truncated : {False, True}, optional, keyword-only
             If False, raise an error for an image where the header shows signs
             that fewer slices / volumes were recorded than were expected.
-        scaling : {'dv', 'fp'}, optional, keyword-only
+        scaling : {'dv', 'fp', None}, optional, keyword-only
             Scaling method to apply to data (see
             :meth:`PARRECHeader.get_data_scaling`).
         """
