@@ -745,7 +745,7 @@ class PARRECHeader(SpatialHeader):
         if normalize_bvecs:
             # scale bvals by the norms of the bvecs then normalize any nonzero
             # bvecs
-            bvec_norms = np.linalg.norm(bvecs, axis=1)
+            bvec_norms = np.sqrt(np.sum(bvecs*bvecs, axis=1))
             non_unity_indices = np.where(np.abs(bvec_norms - 1.0) > 1e-2)[0]
             if len(non_unity_indices) > 0:
                 warnings.warn('Not all bvecs were normalized to 1.0. '
@@ -755,7 +755,7 @@ class PARRECHeader(SpatialHeader):
                 non_zeros = np.where(bvec_norms[non_unity_indices] > 1e-2)[0]
                 if len(non_zeros) > 0:
                     bvecs[non_unity_indices[non_zeros]] /= \
-                        bvec_norms[non_unity_indices[non_zeros]][:, None]
+                        bvec_norms[non_unity_indices[non_zeros]][:, np.newaxis]
         # rotate bvecs to match stored image orientation
         permute_to_psl = ACQ_TO_PSL[self.get_slice_orientation()]
         bvecs = apply_affine(np.linalg.inv(permute_to_psl), bvecs)
