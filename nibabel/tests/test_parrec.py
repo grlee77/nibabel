@@ -176,6 +176,7 @@ def test_header_scaling():
     def_scaling = [np.unique(x) for x in hdr.get_data_scaling()]
     fp_scaling = [np.unique(x) for x in hdr.get_data_scaling('fp')]
     dv_scaling = [np.unique(x) for x in hdr.get_data_scaling('dv')]
+    assert_equal(hdr.get_data_scaling(None), None)
     # Check default is dv scaling
     assert_array_equal(def_scaling, dv_scaling)
     # And that it's almost the same as that from the converted nifti
@@ -478,6 +479,7 @@ def test_image_creation():
     hdr = PARRECHeader(HDR_INFO, HDR_DEFS)
     arr_prox_dv = np.array(PARRECArrayProxy(EG_REC, hdr, scaling='dv'))
     arr_prox_fp = np.array(PARRECArrayProxy(EG_REC, hdr, scaling='fp'))
+    arr_prox_none = np.array(PARRECArrayProxy(EG_REC, hdr, scaling=None))
     good_map = dict(image=FileHolder(EG_REC),
                     header=FileHolder(EG_PAR))
     trunc_map = dict(image=FileHolder(TRUNC_REC),
@@ -502,6 +504,9 @@ def test_image_creation():
         # Can use fp scaling
         img = func(good_param, scaling='fp')
         assert_array_equal(img.dataobj, arr_prox_fp)
+        # Can use None scaling
+        img = func(good_param, scaling=None)
+        assert_array_equal(img.dataobj, arr_prox_none)
         # Truncated raises error without permit_truncated=True
         assert_raises(PARRECError, func, trunc_param)
         assert_raises(PARRECError, func, trunc_param, permit_truncated=False)
