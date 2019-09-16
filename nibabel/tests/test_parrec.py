@@ -53,6 +53,9 @@ VARY_PAR = pjoin(DATA_PATH, 'phantom_varscale.PAR')
 VARY_REC = pjoin(DATA_PATH, 'phantom_varscale.REC')
 # V4.2 PAR with variant field names in the header
 VARIANT_PAR = pjoin(DATA_PATH, 'variant_v4_2_header.PAR')
+# V4.2 PAR affected by bug that results in extra contrast parameters appearing
+CONTRAST_BUG_PAR = pjoin(DATA_PATH, 'v4_2_with_extra_contrast_params.PAR')
+
 # Affine as we determined it mid-2014
 AN_OLD_AFFINE = np.array(
     [[-3.64994708, 0., 1.83564171, 123.66276611],
@@ -862,5 +865,15 @@ def test_alternative_header_field_names():
         HDR_INFO, HDR_DEFS = parse_PAR_header(_fobj)
     assert_equal(HDR_INFO['series_type'], 'Image   MRSERIES')
     assert_equal(HDR_INFO['diffusion_echo_time'], 0.0)
-    assert_equal(HDR_INFO['repetition_time'], npa([ 21225.76]))
+    assert_equal(HDR_INFO['repetition_time'], npa([21225.76]))
     assert_equal(HDR_INFO['patient_position'], 'HFS')
+
+
+def test_PAR_file_with_contrast_parameter_bug():
+    # some V4.2 files from software releases R5.5.x-R5.6.x are affected by
+    # a bug that results in some extra image definitions related to contrast
+    # bolus parameters being written to the file. These should be ignored and
+    # the file read successfully.
+    with ImageOpener(CONTRAST_BUG_PAR, 'rt') as _fobj:
+        HDR_INFO, HDR_DEFS = parse_PAR_header(_fobj)
+    assert_equal(HDR_INFO['patient_position'], 'Head First Supine')
